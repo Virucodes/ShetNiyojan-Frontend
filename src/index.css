@@ -1,0 +1,187 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&family=Outfit:wght@100..900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 34 33% 98%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 142 38% 36%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 143 36% 28%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 35 93% 51%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 142 38% 36%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222 47% 8%;
+    --foreground: 210 40% 96%;
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 96%;
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 96%;
+    --primary: 142 38% 42%;
+    --primary-foreground: 222 47% 8%;
+    --secondary: 143 36% 34%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 220 15% 18%;
+    --muted-foreground: 215 20% 60%;
+    --accent: 35 93% 55%;
+    --accent-foreground: 222 47% 8%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 215 25% 22%;
+    --input: 215 25% 22%;
+    --ring: 142 38% 42%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply transition-colors duration-200;
+  }
+
+  body {
+    @apply bg-agriBg text-foreground;
+  }
+
+  /* ===== GLOBAL DARK MODE OVERRIDES ===== */
+  /* These catch any hardcoded bg-white / bg-agriBg across all pages */
+  .dark body {
+    background-color: hsl(222, 47%, 8%);
+    color: hsl(210, 40%, 96%);
+  }
+
+  /* Pages that use bg-agriBg as root */
+  .dark .bg-agriBg,
+  .dark [class*="bg-agriBg"] {
+    background-color: hsl(222, 47%, 8%) !important;
+  }
+
+  /* White panels / cards that have no dark variant */
+  .dark .bg-white {
+    background-color: hsl(222, 47%, 11%) !important;
+    color: hsl(210, 40%, 96%);
+  }
+
+  /* Gray backgrounds */
+  .dark .bg-gray-50 { background-color: hsl(222, 40%, 10%) !important; }
+  .dark .bg-gray-100 { background-color: hsl(222, 35%, 14%) !important; }
+  .dark .bg-gray-200 { background-color: hsl(222, 30%, 18%) !important; }
+
+  /* Text overrides */
+  .dark .text-gray-900 { color: hsl(210, 40%, 96%) !important; }
+  .dark .text-gray-800 { color: hsl(210, 35%, 90%) !important; }
+  .dark .text-gray-700 { color: hsl(210, 25%, 80%) !important; }
+  .dark .text-gray-600 { color: hsl(210, 20%, 70%) !important; }
+  .dark .text-gray-500 { color: hsl(210, 15%, 58%) !important; }
+
+  /* Borders */
+  .dark .border-gray-200 { border-color: hsl(215, 25%, 22%) !important; }
+  .dark .border-gray-100 { border-color: hsl(215, 25%, 18%) !important; }
+
+  /* Hover gray */
+  .dark .hover\:bg-gray-100:hover { background-color: hsl(222, 35%, 16%) !important; }
+  .dark .hover\:bg-gray-50:hover  { background-color: hsl(222, 35%, 13%) !important; }
+
+  /* Min-h-screen page wrappers */
+  .dark .min-h-screen { color: inherit; }
+
+  /* Input / select elements */
+  .dark input:not([class*="bg-"]),
+  .dark textarea:not([class*="bg-"]),
+  .dark select:not([class*="bg-"]) {
+    background-color: hsl(222, 35%, 14%);
+    color: hsl(210, 40%, 96%);
+    border-color: hsl(215, 25%, 22%);
+  }
+}
+
+
+.stats-divider::after {
+  content: "";
+  position: absolute;
+  top: 15%;
+  right: 0;
+  height: 70%;
+  width: 1px;
+  background-color: #e5e7eb;
+}
+
+*{
+  font-family: 'Nunito';
+}
+
+/* Animation classes */
+.animate-delay-100 {
+  animation-delay: 100ms;
+}
+
+.animate-delay-200 {
+  animation-delay: 200ms;
+}
+
+.animate-delay-300 {
+  animation-delay: 300ms;
+}
+
+.animate-delay-400 {
+  animation-delay: 400ms;
+}
+
+.animate-delay-500 {
+  animation-delay: 500ms;
+}
+
+.appear-on-scroll {
+  opacity: 0;
+}
+
+.appear-on-scroll.visible {
+  animation: fade-in 0.5s ease-out forwards;
+}
+
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Custom thin scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #d1d5db;
+  border-radius: 99px;
+}
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #374151;
+}
