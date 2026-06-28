@@ -36,6 +36,136 @@ interface Equipment {
   ownerContact?: string;
 }
 
+interface EquipmentSeed {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  pricePerHour: number;
+  location: string;
+  imageFileName: string;
+}
+
+const ROHIT_KRISHI_EQUIPMENT: EquipmentSeed[] = [
+  {
+    id: 'rk-1',
+    name: '1 Tyne Multi-Crop Planter (Manual Drawn)',
+    category: 'Planters',
+    description: 'Manual-drawn planter suitable for small farms and precise sowing.',
+    pricePerHour: 120,
+    location: 'Pune, Maharashtra',
+    imageFileName: '1tyne multi crop planter- Manual Drawn.png',
+  },
+  {
+    id: 'rk-2',
+    name: '2 Tyne Multi-Crop Planter (Manual Drawn)',
+    category: 'Planters',
+    description: 'Lightweight manual-drawn planter for row-based multi-crop seeding.',
+    pricePerHour: 140,
+    location: 'Pune, Maharashtra',
+    imageFileName: '2 Tyne Multi-Crop Planter – Manual Drawn.png',
+  },
+  {
+    id: 'rk-3',
+    name: '3 Tyne Multi-Crop Planter (Animal Drawn)',
+    category: 'Planters',
+    description: 'Animal-drawn planter built for efficient sowing in medium fields.',
+    pricePerHour: 180,
+    location: 'Nashik, Maharashtra',
+    imageFileName: '3 Tyne Multi-Crop Planter – Animal Drawn.png',
+  },
+  {
+    id: 'rk-4',
+    name: '4 Tyne Multi-Crop Planter (Special Maize, Tractor Drawn)',
+    category: 'Special Crop Planters',
+    description: 'Tractor-drawn planter designed for maize plantation patterns.',
+    pricePerHour: 350,
+    location: 'Nashik, Maharashtra',
+    imageFileName: '4 Tyne Multi-Crop Planter – Sp. Maize – Tractor Drawn.png',
+  },
+  {
+    id: 'rk-5',
+    name: '5 Tyne Multi-Crop Planter (Mini Tractor Drawn)',
+    category: 'Planters',
+    description: 'Mini-tractor compatible planter with stable seed spacing.',
+    pricePerHour: 280,
+    location: 'Ahmednagar, Maharashtra',
+    imageFileName: '5 Tyne Multi-Crop Planter – Mini Tractor Drawn.png',
+  },
+  {
+    id: 'rk-6',
+    name: '6 Tyne Multi-Crop Planter (Tractor Drawn)',
+    category: 'Planters',
+    description: 'High-coverage planter for tractor-based operations in larger farms.',
+    pricePerHour: 360,
+    location: 'Ahmednagar, Maharashtra',
+    imageFileName: '6 Tyne Multi-Crop Planter – Tractor Drawn.png',
+  },
+  {
+    id: 'rk-7',
+    name: '7 Tyne Multi-Crop Planter (Tractor Drawn)',
+    category: 'Planters',
+    description: 'Reliable tractor-drawn planter for uniform multi-crop sowing.',
+    pricePerHour: 360,
+    location: 'Satara, Maharashtra',
+    imageFileName: '7 Tyne Multi-Crop Planter – Tractor Drawn.png',
+  },
+  {
+    id: 'rk-9',
+    name: '9 Tyne Multi-Crop Planter (Tractor Drawn)',
+    category: 'Planters',
+    description: 'Heavy-duty planter for continuous seeding across large plots.',
+    pricePerHour: 380,
+    location: 'Satara, Maharashtra',
+    imageFileName: '9 Tyne Multi-Crop Planter – Tractor Drawn.png',
+  },
+  {
+    id: 'rk-10',
+    name: '10 Tyne Multi-Crop Planter (Tractor Drawn)',
+    category: 'Planters',
+    description: 'Multi-crop tractor-drawn planter optimized for consistent row depth.',
+    pricePerHour: 390,
+    location: 'Kolhapur, Maharashtra',
+    imageFileName: '10 Tyne Multi-Crop Planter – Tractor Drawn.png',
+  },
+  {
+    id: 'rk-11',
+    name: '11 Tyne Multi-Crop Planter (Special Onion, Tractor Drawn)',
+    category: 'Special Crop Planters',
+    description: 'Specialized onion planter for tractor-mounted precision sowing.',
+    pricePerHour: 420,
+    location: 'Pune, Maharashtra',
+    imageFileName: '11 Tyne Multi-Crop Planter – Special Onion – Tractor Drawn.png',
+  },
+  {
+    id: 'rk-13',
+    name: '13 Tyne Multi-Crop Planter (Special Onion, Tractor Drawn)',
+    category: 'Special Crop Planters',
+    description: 'Advanced onion planter with tractor draw setup for large farms.',
+    pricePerHour: 430,
+    location: 'Pune, Maharashtra',
+    imageFileName: '13 Tyne Multi-Crop Planter – Special Onion – Tractor Drawn.png',
+  },
+];
+
+const toImageUrl = (fileName: string) =>
+  `/images/rohit%20krishi/${encodeURIComponent(fileName)}`;
+
+const staticEquipment: Equipment[] = ROHIT_KRISHI_EQUIPMENT.map((item) => ({
+  id: item.id,
+  name: item.name,
+  category: item.category,
+  description: item.description,
+  pricePerHour: item.pricePerHour,
+  location: item.location,
+  imageUrl: toImageUrl(item.imageFileName),
+  available: true,
+  rating: 4.6,
+  reviews: 12,
+  ownerName: 'Rohit Krishi',
+  ownerContact: '+919876543210',
+}));
+
 const LeaseMarketplace: React.FC = () => {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
@@ -62,11 +192,21 @@ const LeaseMarketplace: React.FC = () => {
         console.log("Lease items API response:", response.data);
         
         if (response.data.status === 'success' && Array.isArray(response.data.data)) {
-          setEquipmentData(response.data.data);
+          const apiItems: Equipment[] = response.data.data;
+          const existingStaticIds = new Set(
+            apiItems
+              .map((item) => item.id || item._id)
+              .filter((id): id is string => Boolean(id))
+          );
+          const mergedEquipment = [
+            ...staticEquipment.filter((item) => !existingStaticIds.has(item.id || '')),
+            ...apiItems,
+          ];
+          setEquipmentData(mergedEquipment);
         } else {
           console.error('Invalid data format from API:', response.data);
           toast.error('Failed to load equipment data: Invalid response format');
-          setEquipmentData([]);
+          setEquipmentData(staticEquipment);
         }
       } catch (error) {
         console.error('Error fetching equipment data:', error);
@@ -75,7 +215,7 @@ const LeaseMarketplace: React.FC = () => {
           console.log("Error status:", error.response?.status);
         }
         toast.error('Failed to load equipment data');
-        setEquipmentData([]);
+        setEquipmentData(staticEquipment);
       }
       
       try {
@@ -83,11 +223,12 @@ const LeaseMarketplace: React.FC = () => {
         console.log("Categories API response:", categoriesResponse.data);
         
         if (categoriesResponse.data.status === 'success' && Array.isArray(categoriesResponse.data.data)) {
-          setCategories(categoriesResponse.data.data);
+          const staticCategories = staticEquipment.map((item) => item.category);
+          setCategories(Array.from(new Set([...categoriesResponse.data.data, ...staticCategories])));
         } else {
           console.error('Invalid categories format from API:', categoriesResponse.data);
           toast.error('Failed to load categories: Invalid response format');
-          setCategories([]);
+          setCategories(Array.from(new Set(staticEquipment.map((item) => item.category))));
         }
       } catch (error) {
         console.error('Error fetching categories:', error);
@@ -96,7 +237,7 @@ const LeaseMarketplace: React.FC = () => {
           console.log("Error status:", error.response?.status);
         }
         toast.error('Failed to load categories');
-        setCategories([]);
+        setCategories(Array.from(new Set(staticEquipment.map((item) => item.category))));
       } finally {
         setIsLoading(false);
       }
@@ -119,7 +260,9 @@ const LeaseMarketplace: React.FC = () => {
   const filteredEquipment = equipmentData.filter(item => {
     const matchesSearch = !searchQuery || 
       item.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      item.description.toLowerCase().includes(searchQuery.toLowerCase());
+      item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.location.toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesCategory = !selectedCategory || item.category === selectedCategory;
     
@@ -260,10 +403,7 @@ const LeaseMarketplace: React.FC = () => {
   return (
     <div className="bg-agriBg min-h-screen w-full">
       <div className="w-full h-full p-4">
-        <DashboardHeader
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-        />
+        <DashboardHeader />
 
         {/* Main Grid */}
         <div className="grid grid-cols-12 gap-4">

@@ -3,174 +3,26 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Truck, TrendingUp, Send, DollarSign, Globe, Map as MapIcon, X } from 'lucide-react';
+import { Loader2, Truck, TrendingUp, Send, Globe, Map as MapIcon, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { formatCurrency } from '@/lib/utils';
 import DashboardSidebar from './dashboard/DashboardSidebar';
 import DashboardHeader from './common/DashboardHeader';
+import axios from 'axios';
+import { API_BASE_URL } from '@/lib/api';
 
-// Local data for cities near Pune
-const citiesData = [
-  { name: "Pune", coordinates: [18.5204, 73.8567] },
-  { name: "Mumbai", coordinates: [19.0760, 72.8777] },
-  { name: "Nashik", coordinates: [19.9975, 73.7898] },
-  { name: "Solapur", coordinates: [17.6599, 75.9064] },
-  { name: "Kolhapur", coordinates: [16.7050, 74.2433] },
-  { name: "Aurangabad", coordinates: [19.8762, 75.3433] }
-];
+const statesAndDistricts: Record<string, string[]> = {
+  "Maharashtra": ["Pune", "Mumbai", "Nashik", "Nagpur", "Kolhapur", "Solapur", "Aurangabad", "Ahmednagar", "Satara", "Jalgaon"],
+  "Gujarat": ["Ahmedabad", "Surat", "Vadodara", "Rajkot", "Anand", "Mehsana"],
+  "Karnataka": ["Bangalore", "Belgaum", "Dharwad", "Mysore", "Kolar", "Tumkur"],
+  "Madhya Pradesh": ["Indore", "Bhopal", "Ujjain", "Jabalpur", "Dhar", "Dewas"],
+  "Uttar Pradesh": ["Lucknow", "Kanpur", "Varanasi", "Agra", "Meerut", "Hapur"]
+};
 
-// Local data for commodities
+// Local data for fallback commodities
 const commoditiesData = [
   "Rice", "Wheat", "Maize", "Potato", "Onion", "Tomato", 
   "Soybean", "Sugarcane", "Cotton", "Jowar", "Bajra"
 ];
-
-// Local price data (per kg) for each city and commodity
-const priceData = {
-  "Rice": {
-    "Pune": 42,
-    "Mumbai": 45,
-    "Nashik": 40,
-    "Solapur": 38,
-    "Kolhapur": 41,
-    "Aurangabad": 39
-  },
-  "Wheat": {
-    "Pune": 35,
-    "Mumbai": 38,
-    "Nashik": 33,
-    "Solapur": 32,
-    "Kolhapur": 34,
-    "Aurangabad": 31
-  },
-  "Maize": {
-    "Pune": 28,
-    "Mumbai": 30,
-    "Nashik": 27,
-    "Solapur": 26,
-    "Kolhapur": 29,
-    "Aurangabad": 25
-  },
-  "Potato": {
-    "Pune": 22,
-    "Mumbai": 25,
-    "Nashik": 20,
-    "Solapur": 21,
-    "Kolhapur": 23,
-    "Aurangabad": 19
-  },
-  "Onion": {
-    "Pune": 32,
-    "Mumbai": 35,
-    "Nashik": 28,
-    "Solapur": 30,
-    "Kolhapur": 31,
-    "Aurangabad": 29
-  },
-  "Tomato": {
-    "Pune": 25,
-    "Mumbai": 28,
-    "Nashik": 23,
-    "Solapur": 24,
-    "Kolhapur": 26,
-    "Aurangabad": 22
-  },
-  "Soybean": {
-    "Pune": 45,
-    "Mumbai": 48,
-    "Nashik": 43,
-    "Solapur": 42,
-    "Kolhapur": 44,
-    "Aurangabad": 41
-  },
-  "Sugarcane": {
-    "Pune": 3.5,
-    "Mumbai": 3.8,
-    "Nashik": 3.2,
-    "Solapur": 3.3,
-    "Kolhapur": 3.6,
-    "Aurangabad": 3.1
-  },
-  "Cotton": {
-    "Pune": 65,
-    "Mumbai": 68,
-    "Nashik": 63,
-    "Solapur": 62,
-    "Kolhapur": 64,
-    "Aurangabad": 61
-  },
-  "Jowar": {
-    "Pune": 30,
-    "Mumbai": 32,
-    "Nashik": 28,
-    "Solapur": 27,
-    "Kolhapur": 29,
-    "Aurangabad": 26
-  },
-  "Bajra": {
-    "Pune": 32,
-    "Mumbai": 34,
-    "Nashik": 30,
-    "Solapur": 29,
-    "Kolhapur": 31,
-    "Aurangabad": 28
-  }
-};
-
-// Distance between cities in km
-const distanceData = {
-  "Pune": {
-    "Pune": 0,
-    "Mumbai": 150,
-    "Nashik": 210,
-    "Solapur": 250,
-    "Kolhapur": 230,
-    "Aurangabad": 235
-  },
-  "Mumbai": {
-    "Pune": 150,
-    "Mumbai": 0,
-    "Nashik": 170,
-    "Solapur": 400,
-    "Kolhapur": 380,
-    "Aurangabad": 340
-  },
-  "Nashik": {
-    "Pune": 210,
-    "Mumbai": 170,
-    "Nashik": 0,
-    "Solapur": 370,
-    "Kolhapur": 420,
-    "Aurangabad": 180
-  },
-  "Solapur": {
-    "Pune": 250,
-    "Mumbai": 400,
-    "Nashik": 370,
-    "Solapur": 0,
-    "Kolhapur": 220,
-    "Aurangabad": 280
-  },
-  "Kolhapur": {
-    "Pune": 230,
-    "Mumbai": 380,
-    "Nashik": 420,
-    "Solapur": 220,
-    "Kolhapur": 0,
-    "Aurangabad": 390
-  },
-  "Aurangabad": {
-    "Pune": 235,
-    "Mumbai": 340,
-    "Nashik": 180,
-    "Solapur": 280,
-    "Kolhapur": 390,
-    "Aurangabad": 0
-  }
-};
-
-// Transport cost per km per kg (in rupees)
-const transportCostPerKmPerKg = 0.02;
 
 interface OptimizationResult {
   current_city: string;
@@ -182,99 +34,112 @@ interface OptimizationResult {
       price_per_kg: number;
       transport_cost: number;
       net_profit: number;
+      distance: number;
+      coordinates: [number, number];
     };
   };
 }
 
 const SupplyChain: React.FC = () => {
-  const [currentCity, setCurrentCity] = useState<string>('Pune');
+  const [currentState, setCurrentState] = useState<string>('Maharashtra');
+  const [currentDistrict, setCurrentDistrict] = useState<string>('Pune');
   const [crop, setCrop] = useState<string>('Rice');
   const [cropWeight, setCropWeight] = useState<string>('100');
   const [loading, setLoading] = useState<boolean>(false);
   const [optimizationResult, setOptimizationResult] = useState<OptimizationResult | null>(null);
   const [showMap, setShowMap] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [commoditiesList, setCommoditiesList] = useState<string[]>([]);
+  const [loadingCommodities, setLoadingCommodities] = useState<boolean>(false);
 
-  const handleOptimize = () => {
-    if (!currentCity || !crop || !cropWeight || parseFloat(cropWeight) <= 0) {
+  // Fetch commodities list dynamically when state or district changes
+  useEffect(() => {
+    const fetchCommodities = async () => {
+      try {
+        setLoadingCommodities(true);
+        const response = await axios.get(`${API_BASE_URL}/mandi/commodities`, {
+          params: { state: currentState, district: currentDistrict }
+        });
+        if (response.data && response.data.commodities) {
+          setCommoditiesList(response.data.commodities);
+          // Auto-select first commodity if current one is not in the list
+          if (response.data.commodities.length > 0 && !response.data.commodities.includes(crop)) {
+            setCrop(response.data.commodities[0]);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching commodities:", err);
+        setCommoditiesList(commoditiesData); // Fallback to local defaults
+      } finally {
+        setLoadingCommodities(false);
+      }
+    };
+    fetchCommodities();
+  }, [currentState, currentDistrict]);
+
+  const handleOptimize = async () => {
+    if (!currentState || !currentDistrict || !crop || !cropWeight || parseFloat(cropWeight) <= 0) {
       toast.error('Please fill all fields with valid values');
       return;
     }
 
     setLoading(true);
-    
-    // Simulate API delay
-    setTimeout(() => {
-      try {
-        const cropWeightKg = parseFloat(cropWeight);
-        const cityDetails: { [city: string]: any } = {};
-        let bestCity = currentCity;
-        let bestNetProfit = 0;
-        
-        // Calculate profits for each city
-        citiesData.forEach(cityData => {
-          const city = cityData.name;
-          const pricePerKg = priceData[crop][city];
-          const distance = distanceData[currentCity][city];
-          const transportCost = distance * transportCostPerKmPerKg * cropWeightKg;
-          
-          // For current city, no transport cost
-          const netProfit = city === currentCity 
-            ? pricePerKg * cropWeightKg 
-            : (pricePerKg * cropWeightKg) - transportCost;
-          
-          cityDetails[city] = {
-            price_per_kg: pricePerKg,
-            transport_cost: city === currentCity ? 0 : transportCost,
-            net_profit: netProfit
-          };
-          
-          // Update best city if profit is higher
-          if (netProfit > bestNetProfit) {
-            bestNetProfit = netProfit;
-            bestCity = city;
-          }
-        });
-        
-        // Create optimization result
-        const result: OptimizationResult = {
-          current_city: currentCity,
-          best_city: bestCity,
-          best_net_profit: bestNetProfit,
-          recommend_transport: bestCity !== currentCity,
-          city_details: cityDetails
-        };
-        
-        setOptimizationResult(result);
+    try {
+      const response = await axios.post(`${API_BASE_URL}/mandi/optimize-transport`, {
+        state: currentState,
+        district: currentDistrict,
+        crop,
+        crop_weight_kg: parseFloat(cropWeight)
+      });
+      
+      if (response.data && response.data.status === "success") {
+        setOptimizationResult(response.data);
+        setShowMap(true);
         toast.success('Transport optimization completed');
-      } catch (error) {
-        console.error('Error during optimization:', error);
-        toast.error('Failed to optimize transport route');
-      } finally {
-        setLoading(false);
+      } else {
+        throw new Error("Failed to optimize");
       }
-    }, 1000); // Simulate 1 second delay for processing
+    } catch (error) {
+      console.error('Error during optimization:', error);
+      toast.error('Failed to optimize transport route');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleViewMap = () => {
     setShowMap(true);
   };
 
-  // Function to get city coordinates 
   const getCityCoordinates = (cityName: string) => {
-    const city = citiesData.find(city => city.name === cityName);
-    return city ? city.coordinates : [0, 0];
+    const details = optimizationResult?.city_details[cityName];
+    return details ? details.coordinates : [0, 0];
   };
 
-  // Function to normalize coordinates for the SVG viewport
+  // Function to normalize coordinates for the SVG viewport dynamically
   const normalizeCoordinates = (lat: number, lng: number) => {
-    // Define bounds for Maharashtra region
-    const minLat = 16.0; // Southern boundary
-    const maxLat = 20.5; // Northern boundary
-    const minLng = 72.5; // Western boundary
-    const maxLng = 76.0; // Eastern boundary
+    let minLat = 16.0;
+    let maxLat = 20.5;
+    let minLng = 72.5;
+    let maxLng = 76.0;
+
+    // Calculate bounds dynamically from returned markets
+    if (optimizationResult && Object.keys(optimizationResult.city_details).length > 0) {
+      const coordinatesList = Object.values(optimizationResult.city_details)
+        .map(details => details.coordinates)
+        .filter(coords => coords && coords[0] !== 0 && coords[1] !== 0);
+      
+      if (coordinatesList.length > 0) {
+        const lats = coordinatesList.map(c => c[0]);
+        const lngs = coordinatesList.map(c => c[1]);
+        
+        minLat = Math.min(...lats) - 0.25;
+        maxLat = Math.max(...lats) + 0.25;
+        minLng = Math.min(...lngs) - 0.25;
+        maxLng = Math.max(...lngs) + 0.25;
+      }
+    }
     
-    // Calculate normalized position (0-100%)
     const x = ((lng - minLng) / (maxLng - minLng)) * 100;
     const y = 100 - ((lat - minLat) / (maxLat - minLat)) * 100; // Invert Y axis
     
@@ -304,14 +169,31 @@ const SupplyChain: React.FC = () => {
                 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium mb-1">Current City</label>
-                    <Select value={currentCity} onValueChange={setCurrentCity}>
+                    <label className="block text-sm font-medium mb-1">State</label>
+                    <Select value={currentState} onValueChange={(val) => {
+                      setCurrentState(val);
+                      setCurrentDistrict(statesAndDistricts[val][0]);
+                    }}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a city" />
+                        <SelectValue placeholder="Select a state" />
                       </SelectTrigger>
                       <SelectContent>
-                        {citiesData.map(city => (
-                          <SelectItem key={city.name} value={city.name}>{city.name}</SelectItem>
+                        {Object.keys(statesAndDistricts).map(st => (
+                          <SelectItem key={st} value={st}>{st}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1">District</label>
+                    <Select value={currentDistrict} onValueChange={setCurrentDistrict}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a district" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {statesAndDistricts[currentState].map(dist => (
+                          <SelectItem key={dist} value={dist}>{dist}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -319,12 +201,19 @@ const SupplyChain: React.FC = () => {
                   
                   <div>
                     <label className="block text-sm font-medium mb-1">Crop</label>
-                    <Select value={crop} onValueChange={setCrop}>
+                    <Select value={crop} onValueChange={setCrop} disabled={loadingCommodities}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a crop" />
+                        {loadingCommodities ? (
+                          <span className="flex items-center text-gray-500 text-xs">
+                            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                            Loading crops...
+                          </span>
+                        ) : (
+                          <SelectValue placeholder="Select a crop" />
+                        )}
                       </SelectTrigger>
                       <SelectContent>
-                        {commoditiesData.map(commodity => (
+                        {commoditiesList.map(commodity => (
                           <SelectItem key={commodity} value={commodity}>{commodity}</SelectItem>
                         ))}
                       </SelectContent>
@@ -387,8 +276,8 @@ const SupplyChain: React.FC = () => {
                       <div className="bg-gray-50 p-4 rounded-lg">
                         <div className="text-gray-500 text-sm">Best Net Profit</div>
                         <div className="font-medium text-lg text-green-600 flex items-center">
-                          <DollarSign className="h-4 w-4 mr-1" />
-                          {formatCurrency(optimizationResult.best_net_profit)}
+                           <span className="mr-1 text-green-600 font-bold">₹</span>
+                           {optimizationResult.best_net_profit.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </div>
                       </div>
                     </div>
@@ -448,8 +337,8 @@ const SupplyChain: React.FC = () => {
                       </table>
                     </div>
                     
-                    <div className="mt-4 text-xs text-gray-500">
-                      * Price and transport cost data is based on local market estimates for cities near Pune.
+                    <div className="mt-4 text-xs text-blue-600 bg-blue-50 dark:bg-blue-950/20 p-2.5 rounded border border-blue-100 dark:border-blue-900/50">
+                      * Price data sourced from the live data.gov.in Mandi API for {currentState} ({currentDistrict} District).
                     </div>
                   </div>
                 ) : (
@@ -496,43 +385,55 @@ const SupplyChain: React.FC = () => {
                       
                       {/* Cities */}
                       <svg width="100%" height="100%" viewBox="0 0 100 100" className="absolute inset-0">
-                        {/* City markers */}
-                        {citiesData.map(city => {
-                          const [lat, lng] = city.coordinates;
+                        {/* Markets (cities) markers */}
+                        {Object.keys(optimizationResult.city_details).map(cityName => {
+                          const details = optimizationResult.city_details[cityName];
+                          const [lat, lng] = details.coordinates;
                           const [x, y] = normalizeCoordinates(lat, lng);
                           
                           return (
-                            <g key={city.name}>
-                              {/* City marker */}
+                            <g key={cityName}>
+                              {/* Glow pulse for best market */}
+                              {cityName === optimizationResult.best_city && (
+                                <circle 
+                                  cx={x} 
+                                  cy={y} 
+                                  r="4.5"
+                                  fill="#10b981"
+                                  className="animate-ping opacity-25"
+                                />
+                              )}
+                              
+                              {/* Market marker */}
                               <circle 
                                 cx={x} 
                                 cy={y} 
-                                r={city.name === optimizationResult.current_city ? 1.5 : 
-                                   city.name === optimizationResult.best_city ? 1.5 : 1}
-                                fill={city.name === optimizationResult.current_city ? "#3b82f6" : 
-                                      city.name === optimizationResult.best_city ? "#10b981" : "#6b7280"}
+                                r={cityName === optimizationResult.current_city ? 2 : 
+                                   cityName === optimizationResult.best_city ? 2.2 : 1.5}
+                                fill={cityName === optimizationResult.current_city ? "#3b82f6" : 
+                                      cityName === optimizationResult.best_city ? "#10b981" : "#6b7280"}
                                 stroke="#fff"
                                 strokeWidth="0.5"
                               />
                               
-                              {/* City label */}
+                              {/* Market name label */}
                               <text 
                                 x={x} 
-                                y={y - 2} 
-                                fontSize="2"
+                                y={y - 2.8} 
+                                fontSize="2.2"
                                 textAnchor="middle" 
-                                fill={city.name === optimizationResult.current_city ? "#3b82f6" : 
-                                      city.name === optimizationResult.best_city ? "#10b981" : "#6b7280"}
-                                fontWeight={city.name === optimizationResult.current_city || 
-                                            city.name === optimizationResult.best_city ? "bold" : "normal"}
+                                fill={cityName === optimizationResult.current_city ? "#3b82f6" : 
+                                      cityName === optimizationResult.best_city ? "#10b981" : "#6b7280"}
+                                fontWeight={cityName === optimizationResult.current_city || 
+                                            cityName === optimizationResult.best_city ? "bold" : "normal"}
                               >
-                                {city.name}
+                                {cityName}
                               </text>
                             </g>
                           );
                         })}
                         
-                        {/* Route line between current city and best city */}
+                        {/* Route line & animation between current and best market */}
                         {optimizationResult.recommend_transport && (
                           (() => {
                             const [startLat, startLng] = getCityCoordinates(optimizationResult.current_city);
@@ -542,23 +443,38 @@ const SupplyChain: React.FC = () => {
                             
                             return (
                               <g>
-                                {/* Route line */}
+                                {/* Route path connection */}
                                 <line 
                                   x1={startX} 
                                   y1={startY} 
                                   x2={endX} 
                                   y2={endY} 
                                   stroke="#3b82f6" 
-                                  strokeWidth="0.5" 
-                                  strokeDasharray="1,1"
+                                  strokeWidth="0.6" 
+                                  strokeDasharray="2,2"
                                 />
                                 
-                                {/* Direction arrow */}
-                                <polygon 
-                                  points={`${endX-1},${endY} ${endX},${endY-1} ${endX+1},${endY}`}
-                                  fill="#3b82f6"
-                                  transform={`rotate(90, ${endX}, ${endY})`}
-                                />
+                                {/* Transport flow animation: dot moves along route line */}
+                                <circle r="1" fill="#f59e0b">
+                                  <animate
+                                    attributeName="cx"
+                                    from={startX}
+                                    to={endX}
+                                    dur="2.5s"
+                                    repeatCount="indefinite"
+                                  />
+                                  <animate
+                                    attributeName="cy"
+                                    from={startY}
+                                    to={endY}
+                                    dur="2.5s"
+                                    repeatCount="indefinite"
+                                  />
+                                </circle>
+                                
+                                {/* Start and End markers again to keep them layered on top */}
+                                <circle cx={startX} cy={startY} r="1.5" fill="#3b82f6" stroke="#fff" strokeWidth="0.4" />
+                                <circle cx={endX} cy={endY} r="1.5" fill="#10b981" stroke="#fff" strokeWidth="0.4" />
                               </g>
                             );
                           })()
@@ -566,27 +482,27 @@ const SupplyChain: React.FC = () => {
                       </svg>
                       
                       {/* Legend */}
-                      <div className="absolute bottom-4 left-4 bg-white dark:bg-gray-900 p-2 rounded shadow-md border border-gray-200 dark:border-gray-700">
-                        <div className="text-xs font-medium mb-1">Legend</div>
-                        <div className="flex items-center text-xs mb-1">
-                          <div className="h-3 w-3 rounded-full bg-blue-500 mr-2"></div>
-                          <span>Current City ({optimizationResult.current_city})</span>
+                      <div className="absolute bottom-4 left-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm p-3 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
+                        <div className="text-xs font-semibold mb-2 text-gray-700 dark:text-gray-300">Map Legend</div>
+                        <div className="flex items-center text-xs mb-1.5">
+                          <div className="h-3 w-3 rounded-full bg-blue-500 mr-2 shadow-sm"></div>
+                          <span className="text-gray-600 dark:text-gray-400">Current Location ({optimizationResult.current_city})</span>
                         </div>
-                        <div className="flex items-center text-xs mb-1">
-                          <div className="h-3 w-3 rounded-full bg-green-500 mr-2"></div>
-                          <span>Best Destination ({optimizationResult.best_city})</span>
+                        <div className="flex items-center text-xs mb-1.5">
+                          <div className="h-3 w-3 rounded-full bg-green-500 mr-2 shadow-sm"></div>
+                          <span className="text-gray-600 dark:text-gray-400">Best Profit Market ({optimizationResult.best_city})</span>
                         </div>
                         <div className="flex items-center text-xs">
-                          <div className="h-3 w-3 rounded-full bg-gray-500 mr-2"></div>
-                          <span>Other Cities</span>
+                          <div className="h-3 w-3 rounded-full bg-gray-500 mr-2 shadow-sm"></div>
+                          <span className="text-gray-600 dark:text-gray-400">Other Mandi Markets</span>
                         </div>
                       </div>
                       
                       {/* Map information */}
-                      <div className="absolute top-4 right-4 bg-white dark:bg-gray-900 p-2 rounded shadow-md border border-gray-200 dark:border-gray-700">
-                        <div className="text-xs font-semibold">Transport Details</div>
-                        <div className="text-xs">
-                          <div>Distance: {distanceData[optimizationResult.current_city][optimizationResult.best_city]} km</div>
+                      <div className="absolute top-4 right-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm p-3 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
+                        <div className="text-xs font-bold text-gray-800 dark:text-gray-200 mb-1">Optimized Transport Flow</div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400 space-y-0.5">
+                          <div>Distance: {optimizationResult.city_details[optimizationResult.best_city].distance.toFixed(1)} km</div>
                           <div>Crop: {crop} ({cropWeight} kg)</div>
                           <div>Transport Cost: ₹{optimizationResult.city_details[optimizationResult.best_city].transport_cost.toFixed(2)}</div>
                         </div>

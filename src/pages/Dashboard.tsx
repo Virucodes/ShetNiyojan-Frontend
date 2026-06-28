@@ -292,7 +292,7 @@ const Dashboard = () => {
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-bold text-sm dark:text-gray-100">Current Season</h3>
                   <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300">
-                    Kharif 2025
+                    Kharif 2026
                   </span>
                 </div>
                 <div className="text-center mb-3">

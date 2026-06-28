@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
@@ -29,7 +29,7 @@ import axios from "axios";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/lib/auth-context";
 import LanguageSelector from "@/components/common/LanguageSelector";
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, AreaChart, Area, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { API_BASE_URL } from '@/lib/api';
 
 interface YieldDetailsProps {
@@ -77,6 +77,11 @@ interface YieldDataType {
   activities: number;
   activityStatus: string;
   description: string;
+  acres?: number;
+  expectedYield?: number;
+  expectedYieldPerAcre?: number;
+  expectedPricePerUnit?: number;
+  weatherRiskFactor?: number;
   activityList: Activity[];
 }
 
@@ -125,6 +130,38 @@ interface ExpenseCategory {
   color: string;
 }
 
+interface ForecastPoint {
+  month: string;
+  investment: number;
+  profit: number;
+  revenue: number;
+}
+
+interface ForecastSummaryData {
+  totalInvestment: number;
+  totalProfit: number;
+  highestInvestmentMonth: ForecastPoint;
+  highestProfitMonth: ForecastPoint;
+  roiPercent: number;
+}
+
+interface ForecastResult {
+  available: boolean;
+  points: ForecastPoint[];
+  summary: ForecastSummaryData | null;
+  reason?: string;
+  assumptions: string[];
+}
+
+const formatInr = (value: number): string =>
+  new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(value);
+
+
+
 const YieldDetails = () => {
   // Get yieldId from URL - with wildcard route, we need to parse it from the pathname
   const { id } = useParams(); // This might be undefined with wildcard route
@@ -146,51 +183,33 @@ const YieldDetails = () => {
   const [showFinancialView, setShowFinancialView] = useState<boolean>(false);
   
   const recognitionRef = useRef<any>(null);
-  const countdownRef = useRef<NodeJS.Timeout | null>(null);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Mock data - in real app, fetch from API
   const [yieldData, setYieldData] = useState<YieldDataType>({
-    name: "Gopal",
-    type: "Financial Planning",
+    name: "",
+    type: "",
     status: "Active",
-    createdDate: "4/4/2025",
-    daysRemain: 12,
-    expense: 102,
-    activities: 3,
+    createdDate: "",
+    daysRemain: 0,
+    expense: 0,
+    activities: 0,
     activityStatus: "Active",
-    description: "Active cultivation",
-    activityList: [
-      {
-        type: "Cultivation",
-        name: "Rotavating Farm for Wheat",
-        date: "4/4/2025, 3:10:08 PM",
-        expense: 500,
-      },
-      {
-        type: "Sowing",
-        name: "Gopal Vijay Dose",
-        date: "4/4/2025, 3:10:20 PM",
-        expense: 300,
-      },
-      {
-        type: "Fertilizer",
-        name: "NPK Application",
-        date: "4/4/2025, 3:10:32 PM",
-        expense: 800,
-        fertilizer: {
-          name: "NPK 20-20-20",
-          quantity: "50kg",
-          billImage: "receipt1.jpg"
-        }
-      }
-    ]
+    description: "",
+    activityList: []
   });
 
   // Add these state variables after other state declarations
   const [aiSuggestions, setAiSuggestions] = useState<{title: string; description: string; category: string}[]>([]);
   const [loadingAiSuggestions, setLoadingAiSuggestions] = useState<boolean>(false);
   const [aiSuggestionsError, setAiSuggestionsError] = useState<string | null>(null);
+
+  const [forecastResult, setForecastResult] = useState<ForecastResult>({
+    available: false,
+    points: [],
+    summary: null,
+    assumptions: []
+  });
 
   // Fetch yield data and activities when component mounts
   useEffect(() => {
@@ -267,6 +286,11 @@ const YieldDetails = () => {
         activities: activitiesResponse.data?.activities?.length || 0,
         activityStatus: yieldStatus, // Also use the same status for activityStatus
         description: yieldResponse.data.description || "No description available",
+        acres: typeof yieldResponse.data.acres === "number" ? yieldResponse.data.acres : undefined,
+        expectedYield: typeof yieldResponse.data.expectedYield === "number" ? yieldResponse.data.expectedYield : undefined,
+        expectedYieldPerAcre: typeof yieldResponse.data.expectedYieldPerAcre === "number" ? yieldResponse.data.expectedYieldPerAcre : undefined,
+        expectedPricePerUnit: typeof yieldResponse.data.expectedPricePerUnit === "number" ? yieldResponse.data.expectedPricePerUnit : undefined,
+        weatherRiskFactor: typeof yieldResponse.data.weatherRiskFactor === "number" ? yieldResponse.data.weatherRiskFactor : undefined,
         activityList: []
       };
       
@@ -359,6 +383,28 @@ const YieldDetails = () => {
       // Update the status state
       setStatus(yieldStatus);
       
+      // 3. Fetch the forecast details from backend
+      try {
+        console.log(`Fetching forecast for yield ID: ${yieldId}`);
+        const forecastResponse = await axios.get(`${API_BASE_URL}/yields/${yieldId}/forecast`, {
+          headers: {
+            "x-access-token": localStorage.getItem("userToken")
+          }
+        });
+        console.log("Forecast response:", forecastResponse.data);
+        if (forecastResponse.data) {
+          setForecastResult(forecastResponse.data);
+        }
+      } catch (fErr) {
+        console.error("Error fetching forecast:", fErr);
+        setForecastResult({
+          available: false,
+          points: [],
+          summary: null,
+          assumptions: ["Failed to load forecast from backend."]
+        });
+      }
+      
       setLoading(false);
     } catch (error) {
       console.error("Error fetching yield data:", error);
@@ -369,11 +415,18 @@ const YieldDetails = () => {
       });
       setLoading(false);
       
-      // Keep the mock data as fallback in case of error
-      setYieldData(prev => ({
-        ...prev,
-        name: `Yield ${yieldId} (Mock Data)`
-      }));
+      setYieldData({
+        name: `Yield ${yieldId}`,
+        type: "",
+        status: "Active",
+        createdDate: "",
+        daysRemain: 0,
+        expense: 0,
+        activities: 0,
+        activityStatus: "Active",
+        description: "",
+        activityList: []
+      });
     }
   };
 
@@ -711,6 +764,9 @@ const YieldDetails = () => {
           title: "Success",
           description: "Activity added successfully",
         });
+        
+        // Refresh yield data (including forecast) from backend
+        fetchYieldData();
       }
     } catch (error) {
       console.error("Error adding activity:", error);
@@ -1019,13 +1075,13 @@ const YieldDetails = () => {
     return suggestions;
   };
 
+  const forecastData = forecastResult.points;
+  const forecastSummary = forecastResult.summary;
+
   return (
     <div className="bg-agriBg min-h-screen w-full">
       <div className="w-full h-full p-4">
-        <DashboardHeader 
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-        />
+        <DashboardHeader />
 
         {/* Main Grid */}
         <div className="grid grid-cols-12 gap-4">
@@ -1156,6 +1212,141 @@ const YieldDetails = () => {
             {showFinancialView ? (
               // Financial Analytics View
               <div>
+                <Card className="p-0 mb-6 overflow-hidden border border-emerald-100 shadow-sm">
+                  {forecastResult.available && forecastSummary ? (
+                    <>
+                      <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 p-6 text-white">
+                        <div className="flex flex-wrap items-start justify-between gap-4">
+                          <div>
+                            <h2 className="text-2xl font-semibold">6-Month Investment & Profit Forecast</h2>
+                            <p className="text-emerald-50 mt-1 text-sm">
+                              Data-driven projection based on this yield's activity history and current lifecycle state.
+                            </p>
+                          </div>
+                          <div className="bg-white/15 backdrop-blur-sm rounded-xl px-4 py-3 border border-white/20">
+                            <p className="text-xs uppercase tracking-wide text-emerald-50">Estimated ROI</p>
+                            <p className="text-2xl font-bold">{forecastSummary.roiPercent.toFixed(1)}%</p>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 mt-5">
+                          <div className="rounded-xl bg-white/15 backdrop-blur-sm border border-white/20 px-4 py-3">
+                            <p className="text-xs text-emerald-50">Total Projected Investment</p>
+                            <p className="text-lg font-semibold mt-1">{formatInr(forecastSummary.totalInvestment)}</p>
+                          </div>
+                          <div className="rounded-xl bg-white/15 backdrop-blur-sm border border-white/20 px-4 py-3">
+                            <p className="text-xs text-emerald-50">Total Projected Profit</p>
+                            <p className="text-lg font-semibold mt-1">{formatInr(forecastSummary.totalProfit)}</p>
+                          </div>
+                          <div className="rounded-xl bg-white/15 backdrop-blur-sm border border-white/20 px-4 py-3">
+                            <p className="text-xs text-emerald-50">Highest Investment Month</p>
+                            <p className="text-lg font-semibold mt-1">
+                              {forecastSummary.highestInvestmentMonth.month}
+                              <span className="text-sm ml-1">({formatInr(forecastSummary.highestInvestmentMonth.investment)})</span>
+                            </p>
+                          </div>
+                          <div className="rounded-xl bg-white/15 backdrop-blur-sm border border-white/20 px-4 py-3">
+                            <p className="text-xs text-emerald-50">Highest Profit Month</p>
+                            <p className="text-lg font-semibold mt-1">
+                              {forecastSummary.highestProfitMonth.month}
+                              <span className="text-sm ml-1">({formatInr(forecastSummary.highestProfitMonth.profit)})</span>
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="p-6 bg-white">
+                        <div className="h-[340px] w-full">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={forecastData} margin={{ top: 12, right: 24, left: 10, bottom: 8 }}>
+                              <defs>
+                                <linearGradient id="investmentGradient" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.35} />
+                                  <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.05} />
+                                </linearGradient>
+                                <linearGradient id="profitGradient" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.35} />
+                                  <stop offset="95%" stopColor="#10b981" stopOpacity={0.05} />
+                                </linearGradient>
+                              </defs>
+                              <CartesianGrid strokeDasharray="4 4" stroke="#e5e7eb" />
+                              <XAxis
+                                dataKey="month"
+                                tick={{ fill: "#6b7280", fontSize: 12 }}
+                                axisLine={{ stroke: "#d1d5db" }}
+                                tickLine={{ stroke: "#d1d5db" }}
+                                label={{ value: "Timeline (Next 6 Months)", position: "insideBottom", offset: -5, fill: "#4b5563", fontSize: 12 }}
+                              />
+                              <YAxis
+                                tick={{ fill: "#6b7280", fontSize: 12 }}
+                                axisLine={{ stroke: "#d1d5db" }}
+                                tickLine={{ stroke: "#d1d5db" }}
+                                tickFormatter={(value: number) => `₹${(value / 1000).toFixed(0)}k`}
+                                label={{ value: "Amount (INR)", angle: -90, position: "insideLeft", fill: "#4b5563", fontSize: 12 }}
+                              />
+                              <Tooltip
+                                formatter={(value: number, name: string) => [formatInr(value), name]}
+                                labelFormatter={(label: string) => `Month: ${label}`}
+                                contentStyle={{ borderRadius: 12, borderColor: "#d1fae5", boxShadow: "0 8px 24px rgba(0,0,0,0.08)" }}
+                              />
+                              <Legend verticalAlign="top" height={28} />
+                              <Area
+                                type="monotone"
+                                dataKey="investment"
+                                name="Projected Investment"
+                                stroke="#f59e0b"
+                                strokeWidth={2.5}
+                                fill="url(#investmentGradient)"
+                                animationDuration={900}
+                              />
+                              <Area
+                                type="monotone"
+                                dataKey="profit"
+                                name="Projected Profit"
+                                stroke="#10b981"
+                                strokeWidth={2.5}
+                                fill="url(#profitGradient)"
+                                animationDuration={1100}
+                              />
+                              <Line
+                                type="monotone"
+                                dataKey="revenue"
+                                name="Projected Revenue"
+                                stroke="#0ea5e9"
+                                strokeWidth={2}
+                                dot={{ r: 3, strokeWidth: 1, fill: "#ffffff" }}
+                                activeDot={{ r: 5 }}
+                                animationDuration={1000}
+                              />
+                            </AreaChart>
+                          </ResponsiveContainer>
+                        </div>
+                        {forecastResult.assumptions.length > 0 && (
+                          <div className="mt-3 text-xs text-gray-500">
+                            <p className="font-medium text-gray-600 mb-1">Forecast assumptions</p>
+                            {forecastResult.assumptions.map((assumption, index) => (
+                              <p key={index}>• {assumption}</p>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="p-6 bg-white">
+                      <h2 className="text-xl font-semibold text-gray-800">6-Month Investment & Profit Forecast</h2>
+                      <p className="text-sm text-gray-600 mt-2">
+                        {forecastResult.reason || "Not enough data to generate a reliable forecast yet."}
+                      </p>
+                      <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                        Add more real farm records to unlock forecast insights:
+                        <div>• Log at least 2 expense activities for this yield.</div>
+                        <div>• Add expected yield and market price fields in yield data, or record sales/income activities.</div>
+                        <div>• Update crop lifecycle activities to improve monthly stage allocation.</div>
+                      </div>
+                    </div>
+                  )}
+                </Card>
+
                 <Card className="p-6 mb-6">
                   <h2 className="text-xl font-semibold mb-4">Expense Breakdown by Category</h2>
                   
