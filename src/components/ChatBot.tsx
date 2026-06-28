@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { X, Send, MinusCircle, Move, Bot } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
+import { API_BASE_URL } from '@/lib/api';
 
 interface Message {
   text: string;
@@ -101,7 +102,7 @@ const ChatBot: React.FC = () => {
   // Function to call the backend API
   const fetchBotResponse = async (userMessage: string) => {
     try {
-      const response = await axios.post('http://localhost:5000/api/chat', {
+      const response = await axios.post(`${API_BASE_URL}/chat`, {
         message: userMessage,
         model: 'llama-3.3-70b-versatile',
         temperature: 0.7,

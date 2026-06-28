@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import DashboardHeader from "@/components/common/DashboardHeader";
 import { yields as yieldsApi } from '@/lib/api';
+import { API_BASE_URL } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import GovernmentPolicies from "@/components/dashboard/GovernmentPolicies";
 import CropAnalytics from "@/components/dashboard/CropAnalytics";
@@ -66,7 +67,7 @@ const Dashboard = () => {
   
   const handleAddYield = async (data: { name: string; acres: number; mobileno: string }) => {
     try {
-      const response = await fetch("http://localhost:5000/api/yields", {
+      const response = await fetch(`${API_BASE_URL}/yields`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: data.name, acres: data.acres, mobileno: data.mobileno }),

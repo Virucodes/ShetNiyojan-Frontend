@@ -30,6 +30,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/lib/auth-context";
 import LanguageSelector from "@/components/common/LanguageSelector";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { API_BASE_URL } from '@/lib/api';
 
 interface YieldDetailsProps {
   id?: string;
@@ -226,7 +227,7 @@ const YieldDetails = () => {
       console.log(`Fetching data for yield ID: ${yieldId} and mobile: ${mobileNo}`);
       
       // 1. Fetch the yield details
-      const yieldResponse = await axios.get(`http://localhost:5000/api/yields/${yieldId}`, {
+      const yieldResponse = await axios.get(`${API_BASE_URL}/yields/${yieldId}`, {
         headers: {
           "x-access-token": localStorage.getItem("userToken")
         }
@@ -243,7 +244,7 @@ const YieldDetails = () => {
       console.log("Yield status from backend:", yieldStatus);
       
       // 2. Fetch the activities for this yield
-      const activitiesResponse = await axios.post("http://localhost:5000/api/activities", {
+      const activitiesResponse = await axios.post(`${API_BASE_URL}/activities`, {
         yield_id: yieldId,
         mobileno: mobileNo
       }, {
@@ -662,7 +663,7 @@ const YieldDetails = () => {
       console.log("Sending activity to API:", apiPayload);
       
       // Make the API call to add the activity
-      const response = await axios.post("http://localhost:5000/api/create_activity", apiPayload, {
+      const response = await axios.post(`${API_BASE_URL}/create_activity`, apiPayload, {
         headers: {
           "Content-Type": "application/json",
           "x-access-token": localStorage.getItem("userToken")
@@ -789,7 +790,7 @@ const YieldDetails = () => {
       
       // Make API call to update the yield status
       const response = await axios.put(
-        `http://localhost:5000/api/yields/${yieldId}`,
+        `${API_BASE_URL}/yields/${yieldId}`,
         { status: newStatus },
         {
           headers: {
@@ -897,7 +898,7 @@ const YieldDetails = () => {
       
       // Call the backend API
       const response = await axios.post(
-        "http://localhost:5000/api/cost-reduction-suggestions", 
+        `${API_BASE_URL}/cost-reduction-suggestions`, 
         requestData,
         {
           headers: {

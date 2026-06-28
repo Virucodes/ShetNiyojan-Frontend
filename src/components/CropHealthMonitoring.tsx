@@ -2,6 +2,7 @@ import React, { useState, ChangeEvent, FormEvent, useRef } from 'react';
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
 import { Upload, Image as ImageIcon, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
 import axios from 'axios';
+import { API_BASE_URL } from '@/lib/api';
 
 // Define types
 interface FormDataType {
@@ -118,7 +119,7 @@ const CropHealthMonitoring: React.FC = () => {
       data.append('cropName', formData.cropName);
       
       console.log("Sending data to API");
-      const response = await axios.post("http://localhost:5000/api/plant-disease-analysis", data, {
+      const response = await axios.post(`${API_BASE_URL}/plant-disease-analysis`, data, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }

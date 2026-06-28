@@ -1,5 +1,6 @@
 import React, { useState, ChangeEvent, FormEvent } from 'react';
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
+import { API_BASE_URL } from '@/lib/api';
 
 // Define types
 type SoilType = 'clay' | 'sandy' | 'loam' | 'silt' | 'peaty' | 'chalky' | 'loamy';
@@ -87,7 +88,7 @@ const CropPrediction: React.FC = () => {
       console.log("Sending data to API:", apiData);
       
       // Call the backend API
-      const response = await fetch("http://localhost:5000/api/crop-recommendation", {
+      const response = await fetch(`${API_BASE_URL}/crop-recommendation`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
