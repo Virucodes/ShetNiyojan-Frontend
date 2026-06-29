@@ -129,49 +129,54 @@ const CropHealthMonitoring: React.FC = () => {
       
       if (response.data && response.data.analysis) {
         try {
-          // Get the raw analysis string
-          let analysisString = response.data.analysis;
-          console.log("Raw analysis string:", analysisString);
-          
-          // Clean the analysis string (remove markdown code block and escape characters)
-          if (typeof analysisString === 'string') {
-            // Remove markdown code block delimiters and escape characters
-            analysisString = analysisString
-              .replace(/^```[\s\S]*?/, '')
-              .replace(/```$/, '')
-              .replace(/\\n/g, '\n')
-              .replace(/\\"/g, '"')
-              .trim();
-          }
-          
-          console.log("Cleaned analysis string:", analysisString);
-          
-          // Parse the JSON data
-          let analysisData;
+          let analysisData: any;
+        
+        // Safe parsing: if it's already an object, use it directly!
+        if (typeof response.data.analysis === 'object' && response.data.analysis !== null) {
+          analysisData = response.data.analysis;
+        } else {
           try {
-            // First try direct JSON parsing
+            let analysisString = response.data.analysis;
+            console.log("Raw analysis string:", analysisString);
+            
+            // Clean markdown delimiters
+            if (typeof analysisString === 'string') {
+              analysisString = analysisString
+                .replace(/^```json\s*/i, '')
+                .replace(/^```[\s\S]*?/, '')
+                .replace(/```$/, '')
+                .trim();
+            }
+            
+            console.log("Cleaned analysis string:", analysisString);
+            
+            // Try standard parse
             analysisData = JSON.parse(analysisString);
           } catch (parseError) {
-            console.error("Error in first parse attempt:", parseError);
+            console.error("Direct JSON parse failed:", parseError);
             
-            // Try additional cleaning if first attempt fails
-            const cleanedString = analysisString
-              .replace(/\\n/g, '')
-              .replace(/\\"/g, '"')
-              .replace(/^```json/, '')
-              .replace(/```$/, '')
-              .trim();
-              
+            // Fallback parse attempt: replace literal newlines with escaped '\n'
             try {
-              analysisData = JSON.parse(cleanedString);
-            } catch (secondParseError) {
-              console.error("Error in second parse attempt:", secondParseError);
+              let sanitized = String(response.data.analysis)
+                .replace(/\n/g, '\\n')
+                .replace(/\r/g, '\\r');
               
-              // Last resort - try to extract the JSON using regex
-              const jsonMatch = analysisString.match(/{[\s\S]*}/);
+              // Clean markdown delimiters on sanitized string
+              sanitized = sanitized
+                .replace(/^```json\s*/i, '')
+                .replace(/^```[\s\S]*?/, '')
+                .replace(/```$/, '')
+                .trim();
+                
+              analysisData = JSON.parse(sanitized);
+            } catch (secondParseError) {
+              console.error("All parse attempts failed:", secondParseError);
+              
+              // Last resort regex extraction
+              const jsonMatch = String(response.data.analysis).match(/{[\s\S]*}/);
               if (jsonMatch) {
                 try {
-                  analysisData = JSON.parse(jsonMatch[0]);
+                  analysisData = JSON.parse(jsonMatch[0].replace(/\n/g, '\\n').replace(/\r/g, '\\r'));
                 } catch (e) {
                   throw new Error("Failed to parse analysis data after multiple attempts");
                 }
@@ -180,6 +185,7 @@ const CropHealthMonitoring: React.FC = () => {
               }
             }
           }
+        }
           
           console.log("Successfully parsed analysis data:", analysisData);
           
